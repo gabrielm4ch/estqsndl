@@ -111,7 +111,7 @@ function Notas({ db }: { db: DB }) {
                 {aberta === n.chave && (
                   <tr><td colSpan={5}>
                     <table className="tbl">
-                      <thead><tr><th>Código</th><th>Item</th><th>Descrição Personalizada</th><th>Qtd.</th><th>Registrado em</th></tr></thead>
+                      <thead><tr><th>Código</th><th>Item</th><th>Descrição Personalizada</th><th>Qtd.</th><th>Data de Cadastro</th></tr></thead>
                       <tbody>{n.entradas.map((e) => (
                         <tr key={e.id}><td>{item(e.itemId)?.codigo ?? "-"}</td><td>{item(e.itemId)?.descricao ?? "(removido)"}</td><td>{e.descricaoPersonalizada ?? "-"}</td><td>{e.quantidade}</td><td>{fmt(e.data)}</td></tr>
                       ))}</tbody>
