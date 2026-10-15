@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { fmt, fmtDia, registrarEntradas, useDB, type DB } from "@/lib/store";
+import { fmtDia, registrarEntradas, useDB, type DB } from "@/lib/store";
 import { Historico } from "@/components/Historico";
 
 export const Route = createFileRoute("/entrada")({
@@ -81,8 +81,9 @@ function EntradaPage() {
       <Historico
         titulo="Histórico de Entradas"
         botao="Histórico de Entradas"
-        head={["Data/Hora", "NF", "Recebido em", "Fornecedor", "Código", "Item", "Desc. Personalizada", "Qtd."]}
-        rows={db.entradas.map((e) => ({ data: e.data, cells: [fmt(e.data), e.nota ?? "-", fmtDia(e.recebidoEm), e.fornecedor, item(e.itemId)?.codigo ?? "-", item(e.itemId)?.descricao ?? "(removido)", e.descricaoPersonalizada ?? "-", e.quantidade] }))}
+        head={["Data de Recebimento", "NF", "Fornecedor", "Código", "Item", "Desc. Personalizada", "Qtd."]}
+        rows={db.entradas.map((e) => { const rec = e.recebidoEm || e.data.slice(0, 10); return { data: rec, cells: [fmtDia(rec), e.nota ?? "-", e.fornecedor, item(e.itemId)?.codigo ?? "-", item(e.itemId)?.descricao ?? "(removido)", e.descricaoPersonalizada ?? "-", e.quantidade] }; })}
+
       />
     </div>
   );

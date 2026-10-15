@@ -5,6 +5,8 @@ const toInput = (d: Date) => {
   const z = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
   return z.toISOString().slice(0, 10);
 };
+const ts = (d: string) => new Date(d.length === 10 ? d + "T00:00:00" : d).getTime();
+
 
 export function Historico({ titulo, botao, head, rows }: {
   titulo: string; botao: string; head: string[];
@@ -19,7 +21,8 @@ export function Historico({ titulo, botao, head, rows }: {
     if (!aberto) return sorted.slice(0, 5);
     const ini = de ? new Date(de + "T00:00:00").getTime() : -Infinity;
     const fim = ate ? new Date(ate + "T23:59:59.999").getTime() : Infinity;
-    return sorted.filter((r) => { const t = new Date(r.data).getTime(); return t >= ini && t <= fim; });
+    return sorted.filter((r) => { const t = ts(r.data); return t >= ini && t <= fim; });
+
   }, [sorted, aberto, de, ate]);
 
   const abrir = () => {
