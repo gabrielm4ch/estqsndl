@@ -10,33 +10,63 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as EntradaRouteImport } from './routes/entrada'
+import { Route as SaidaRouteImport } from './routes/saida'
+import { Route as SaidaVariosRouteImport } from './routes/saida-varios'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EntradaRoute = EntradaRouteImport.update({
+  id: '/entrada',
+  path: '/entrada',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SaidaRoute = SaidaRouteImport.update({
+  id: '/saida',
+  path: '/saida',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SaidaVariosRoute = SaidaVariosRouteImport.update({
+  id: '/saida-varios',
+  path: '/saida-varios',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/entrada': typeof EntradaRoute
+  '/saida': typeof SaidaRoute
+  '/saida-varios': typeof SaidaVariosRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/entrada': typeof EntradaRoute
+  '/saida': typeof SaidaRoute
+  '/saida-varios': typeof SaidaVariosRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/entrada': typeof EntradaRoute
+  '/saida': typeof SaidaRoute
+  '/saida-varios': typeof SaidaVariosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/entrada' | '/saida' | '/saida-varios'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/entrada' | '/saida' | '/saida-varios'
+  id: '__root__' | '/' | '/entrada' | '/saida' | '/saida-varios'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  EntradaRoute: typeof EntradaRoute
+  SaidaRoute: typeof SaidaRoute
+  SaidaVariosRoute: typeof SaidaVariosRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +78,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/entrada': {
+      id: '/entrada'
+      path: '/entrada'
+      fullPath: '/entrada'
+      preLoaderRoute: typeof EntradaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/saida': {
+      id: '/saida'
+      path: '/saida'
+      fullPath: '/saida'
+      preLoaderRoute: typeof SaidaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/saida-varios': {
+      id: '/saida-varios'
+      path: '/saida-varios'
+      fullPath: '/saida-varios'
+      preLoaderRoute: typeof SaidaVariosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  EntradaRoute: EntradaRoute,
+  SaidaRoute: SaidaRoute,
+  SaidaVariosRoute: SaidaVariosRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
