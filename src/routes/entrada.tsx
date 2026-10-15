@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { fmt, registrarEntrada, useDB } from "@/lib/store";
+import { fmt, fmtDia, registrarEntradas, useDB, type DB } from "@/lib/store";
 import { Historico } from "@/components/Historico";
 
 export const Route = createFileRoute("/entrada")({
@@ -10,49 +10,97 @@ export const Route = createFileRoute("/entrada")({
       { name: "description", content: "Registre entradas de itens no estoque do almoxarifado." },
       { property: "og:title", content: "Entrada · Controle de Estoque" },
       { property: "og:description", content: "Registre entradas de itens no estoque do almoxarifado." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: EntradaPage,
 });
 
+const hoje = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
+type Linha = { itemId: string; qtd: string; usarDesc: boolean; desc: string };
+const novaLinha = (): Linha => ({ itemId: "", qtd: "", usarDesc: false, desc: "" });
+
 function EntradaPage() {
   const db = useDB();
-  const [itemId, setItemId] = useState("");
-  const [qtd, setQtd] = useState("");
-  const [msg, setMsg] = useState("");
+  const [lote, setLote] = useState(false);
+  const [nota, setNota] = useState("");
+  const [fornId, setFornId] = useState("");
+  const [receb, setReceb] = useState(hoje());
+  const [linhas, setLinhas] = useState<Linha[]>([novaLinha()]);
+  const [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null);
   const item = (id: string) => db.itens.find((i) => i.id === id);
+  const set = (i: number, p: Partial<Linha>) => setLinhas(linhas.map((l, j) => (j === i ? { ...l, ...p } : l)));
+
+  const salvar = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nota.trim() || !fornId || !receb) return setMsg({ ok: false, t: "Preencha Nota Fiscal, Fornecedor e Data de Recebimento." });
+    const usadas = lote ? linhas : linhas.slice(0, 1);
+    const validas = usadas.filter((l) => l.itemId && Number(l.qtd) > 0);
+    if (validas.length === 0 || validas.length !== usadas.filter((l) => l.itemId || l.qtd).length)
+      return setMsg({ ok: false, t: "Selecione o item e uma quantidade válida em cada linha." });
+    registrarEntradas(validas.map((l) => ({ itemId: l.itemId, quantidade: Number(l.qtd), descricaoPersonalizada: l.usarDesc ? l.desc : undefined })), { nota: nota.trim(), fornecedorId: fornId, recebidoEm: receb });
+    setMsg({ ok: true, t: `Entrada de ${validas.length} item(ns) da NF ${nota.trim()} registrada.` });
+    setLinhas([novaLinha()]);
+    if (lote) setNota("");
+  };
+
+  const mostradas = lote ? linhas : linhas.slice(0, 1);
 
   return (
     <div className="space-y-6">
       <section className="panel">
-        <h2 className="panel-title">Registrar Entrada</h2>
-        <form className="mt-4 flex flex-wrap items-end gap-3" onSubmit={(e) => {
-          e.preventDefault();
-          const q = Number(qtd);
-          if (!itemId || !(q > 0)) return setMsg("Selecione o item e uma quantidade válida.");
-          registrarEntrada(itemId, q);
-          setMsg(`Entrada de ${q} × ${item(itemId)?.descricao} registrada.`);
-          setQtd("");
-        }}>
-          <label className="field min-w-64 flex-1">Item
-            <select className="input" value={itemId} onChange={(e) => setItemId(e.target.value)}>
-              <option value="">Selecione…</option>
-              {db.itens.map((i) => <option key={i.id} value={i.id}>{i.codigo} — {i.descricao} (atual {i.quantidade})</option>)}
-            </select>
-          </label>
-          <label className="field w-36">Quantidade<input type="number" min="1" className="input" value={qtd} onChange={(e) => setQtd(e.target.value)} /></label>
-          <button className="btn btn-primary">Salvar Entrada</button>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="panel-title">{lote ? "Entrada em Lote" : "Registrar Entrada"}</h2>
+          <button type="button" className="btn btn-ghost" onClick={() => { setLote(!lote); setMsg(null); }}>{lote ? "Voltar para Entrada Individual" : "Entrada em Lote"}</button>
+        </div>
+        {db.fornecedores.length === 0 && <p className="mt-2 text-sm text-muted-foreground">Cadastre fornecedores na aba "Fornecedores" do Banco de Dados.</p>}
+        <form className="mt-4 space-y-4" onSubmit={salvar}>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <label className="field">Fornecedor
+              <select className="input" value={fornId} onChange={(e) => setFornId(e.target.value)}>
+                <option value="">Selecione…</option>
+                {db.fornecedores.map((f) => <option key={f.id} value={f.id}>{f.nome} — {f.cnpj}</option>)}
+              </select>
+            </label>
+            <label className="field">Número da Nota Fiscal<input className="input" value={nota} onChange={(e) => setNota(e.target.value)} /></label>
+            <label className="field">Data de Recebimento<input type="date" className="input" value={receb} onChange={(e) => setReceb(e.target.value)} /></label>
+          </div>
+          {mostradas.map((l, i) => (
+            <LinhaItem key={i} db={db} l={l} onChange={(p) => set(i, p)} onRemove={lote && linhas.length > 1 ? () => setLinhas(linhas.filter((_, j) => j !== i)) : undefined} />
+          ))}
+          <div className="flex flex-wrap gap-2">
+            {lote && <button type="button" className="btn btn-ghost" onClick={() => setLinhas([...linhas, novaLinha()])}>+ Adicionar linha</button>}
+            <button className="btn btn-primary">{lote ? "Salvar Lote" : "Salvar Entrada"}</button>
+          </div>
         </form>
-        <p className="mt-2 text-sm text-muted-foreground">Fornecedor: Almoxarifado · data e hora gravadas automaticamente.</p>
-        {msg && <p className="mt-2 text-sm font-medium text-success">{msg}</p>}
+        <p className="mt-2 text-sm text-muted-foreground">Data e hora do registro gravadas automaticamente.</p>
+        {msg && <p className={`mt-2 text-sm font-medium ${msg.ok ? "text-success" : "text-destructive"}`}>{msg.t}</p>}
       </section>
 
       <Historico
         titulo="Histórico de Entradas"
         botao="Histórico de Entradas"
-        head={["Data/Hora", "Código", "Item", "Qtd.", "Fornecedor"]}
-        rows={db.entradas.map((e) => ({ data: e.data, cells: [fmt(e.data), item(e.itemId)?.codigo ?? "-", item(e.itemId)?.descricao ?? "(removido)", e.quantidade, e.fornecedor] }))}
+        head={["Data/Hora", "NF", "Recebido em", "Fornecedor", "Código", "Item", "Desc. Personalizada", "Qtd."]}
+        rows={db.entradas.map((e) => ({ data: e.data, cells: [fmt(e.data), e.nota ?? "-", fmtDia(e.recebidoEm), e.fornecedor, item(e.itemId)?.codigo ?? "-", item(e.itemId)?.descricao ?? "(removido)", e.descricaoPersonalizada ?? "-", e.quantidade] }))}
       />
+    </div>
+  );
+}
+
+function LinhaItem({ db, l, onChange, onRemove }: { db: DB; l: Linha; onChange: (p: Partial<Linha>) => void; onRemove?: (() => void) | undefined }) {
+  return (
+    <div className="flex flex-wrap items-end gap-3 border-t pt-3">
+      <label className="field min-w-64 flex-1">Item
+        <select className="input" value={l.itemId} onChange={(e) => onChange({ itemId: e.target.value })}>
+          <option value="">Selecione…</option>
+          {db.itens.map((i) => <option key={i.id} value={i.id}>{i.codigo} — {i.descricao} (atual {i.quantidade})</option>)}
+        </select>
+      </label>
+      <label className="field w-32">Quantidade<input type="number" min="1" className="input" value={l.qtd} onChange={(e) => onChange({ qtd: e.target.value })} /></label>
+      <label className="flex items-center gap-2 pb-2 text-sm"><input type="checkbox" checked={l.usarDesc} onChange={(e) => onChange({ usarDesc: e.target.checked })} />Descrição Personalizada</label>
+      {l.usarDesc && <label className="field min-w-56 flex-1">Descrição Personalizada (opcional)<input className="input" value={l.desc} onChange={(e) => onChange({ desc: e.target.value })} /></label>}
+      {onRemove && <button type="button" className="link link-danger pb-2" onClick={onRemove}>Remover</button>}
     </div>
   );
 }
