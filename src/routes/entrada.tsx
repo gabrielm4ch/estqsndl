@@ -88,7 +88,7 @@ function EntradaPage() {
   );
 }
 
-function LinhaItem({ db, l, onChange, onRemove }: { db: DB; l: Linha; onChange: (p: Partial<Linha>) => void; onRemove?: () => void }) {
+function LinhaItem({ db, l, onChange, onRemove }: { db: DB; l: Linha; onChange: (p: Partial<Linha>) => void; onRemove?: (() => void) | undefined }) {
   return (
     <div className="flex flex-wrap items-end gap-3 border-t pt-3">
       <label className="field min-w-64 flex-1">Item

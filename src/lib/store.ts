@@ -4,7 +4,7 @@ export type Categoria = "Consumível" | "Retorno";
 export interface Item { id: string; codigo: string; descricao: string; minimo: number; quantidade: number; categoria: Categoria }
 export interface Pessoa { id: string; codigo: string; nome: string }
 export interface Fornecedor { id: string; nome: string; cnpj: string }
-export interface Entrada { id: string; itemId: string; quantidade: number; fornecedor: string; data: string; fornecedorId?: string; nota?: string; recebidoEm?: string; descricaoPersonalizada?: string }
+export interface Entrada { id: string; itemId: string; quantidade: number; fornecedor: string; data: string; fornecedorId?: string; nota?: string; recebidoEm?: string; descricaoPersonalizada?: string | undefined }
 export interface Saida { id: string; itemId: string; quantidade: number; funcionarioId: string; setorId: string; data: string; retorno: boolean; devolvidoEm?: string }
 export interface DB { itens: Item[]; funcionarios: Pessoa[]; setores: Pessoa[]; fornecedores: Fornecedor[]; entradas: Entrada[]; saidas: Saida[] }
 
@@ -12,7 +12,7 @@ const KEY = "estoque-db-v1";
 const empty: DB = { itens: [], funcionarios: [], setores: [], fornecedores: [], entradas: [], saidas: [] };
 
 export interface NotaMeta { nota: string; fornecedorId: string; recebidoEm: string }
-export function registrarEntradas(linhas: { itemId: string; quantidade: number; descricaoPersonalizada?: string }[], meta: NotaMeta) {
+export function registrarEntradas(linhas: { itemId: string; quantidade: number; descricaoPersonalizada?: string | undefined }[], meta: NotaMeta) {
   update((db) => {
     const forn = db.fornecedores.find((f) => f.id === meta.fornecedorId);
     const data = nowISO();
