@@ -61,7 +61,7 @@ type Linha = { qtd: string; unidade: string; descricao: string; direcionamento: 
 
 function Formulario({ db, onCancel, onDone }: { db: DB; onCancel: () => void; onDone: (s: Solicitacao) => void }) {
   const unidades = unidadesDe(db);
-  const vazia = (): Linha => ({ qtd: "", unidade: unidades[0], descricao: "", direcionamento: DIRS[0], setor: "", temSolic: false, solicitanteId: "", urg: "" });
+  const vazia = (): Linha => ({ qtd: "", unidade: unidades[0] ?? "UNIDADE", descricao: "", direcionamento: "MATERIAL DE EXPEDIENTE", setor: "", temSolic: false, solicitanteId: "", urg: "" });
   const [linhas, setLinhas] = useState<Linha[]>([vazia()]);
   const [erro, setErro] = useState("");
   const set = (i: number, p: Partial<Linha>) => setLinhas(linhas.map((l, j) => (j === i ? { ...l, ...p } : l)));
@@ -69,7 +69,7 @@ function Formulario({ db, onCancel, onDone }: { db: DB; onCancel: () => void; on
 
   const escolherDescricao = (i: number, v: string) => {
     const it = db.itens.find((x) => rotulo(x) === v);
-    set(i, it ? { descricao: it.descricao, unidade: it.unidade ?? linhas[i].unidade } : { descricao: v });
+    set(i, it ? { descricao: it.descricao, unidade: it.unidade ?? linhas[i]?.unidade ?? "UNIDADE" } : { descricao: v });
   };
 
   const registrar = () => {
