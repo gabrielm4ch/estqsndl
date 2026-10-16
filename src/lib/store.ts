@@ -1,15 +1,33 @@
 import { useSyncExternalStore } from "react";
 
 export type Categoria = "Consumível" | "Retorno";
-export interface Item { id: string; codigo: string; descricao: string; minimo: number; quantidade: number; categoria: Categoria }
-export interface Pessoa { id: string; codigo: string; nome: string }
+export interface Item { id: string; codigo: string; descricao: string; minimo: number; quantidade: number; categoria: Categoria; unidade?: string | undefined }
+export type TipoPessoa = "Professor" | "Funcionário";
+export interface Pessoa { id: string; codigo: string; nome: string; tipo?: TipoPessoa | undefined }
 export interface Fornecedor { id: string; nome: string; cnpj: string }
 export interface Entrada { id: string; itemId: string; quantidade: number; fornecedor: string; data: string; fornecedorId?: string; nota?: string; recebidoEm?: string; descricaoPersonalizada?: string | undefined }
 export interface Saida { id: string; itemId: string; quantidade: number; funcionarioId: string; setorId: string; data: string; retorno: boolean; devolvidoEm?: string }
-export interface DB { itens: Item[]; funcionarios: Pessoa[]; setores: Pessoa[]; fornecedores: Fornecedor[]; entradas: Entrada[]; saidas: Saida[] }
+export type Direcionamento = "MATERIAL DE EXPEDIENTE" | "MATERIAL EDUCACIONAL";
+export interface LinhaCompra { quantidade: number; unidade: string; descricao: string; itemId?: string | undefined; direcionamento: Direcionamento; setor: string; solicitanteId?: string | undefined; urgencia: 1 | 2 | 3 }
+export interface Solicitacao { id: string; data: string; linhas: LinhaCompra[] }
+export interface DB { itens: Item[]; funcionarios: Pessoa[]; setores: Pessoa[]; fornecedores: Fornecedor[]; entradas: Entrada[]; saidas: Saida[]; unidades: string[]; solicitacoes: Solicitacao[] }
+
+export const UNIDADES_PADRAO = ["UNIDADE", "ROLO", "FOLHA", "PACOTE", "CARTELA"];
+export const unidadesDe = (db: DB) => [...UNIDADES_PADRAO, ...db.unidades.filter((u) => !UNIDADES_PADRAO.includes(u))];
+export const porCodigo = <T extends { codigo: string }>(l: T[]) => [...l].sort((a, b) => a.codigo.localeCompare(b.codigo, "pt-BR", { numeric: true, sensitivity: "base" }));
+export function proximoCodigo(lista: Pessoa[], tipo: TipoPessoa) {
+  const pre = tipo === "Professor" ? "PR-" : "FU-";
+  const max = lista.reduce((m, p) => (p.codigo.startsWith(pre) ? Math.max(m, Number(p.codigo.slice(3)) || 0) : m), 0);
+  return pre + String(max + 1).padStart(3, "0");
+}
+export function registrarSolicitacao(linhas: LinhaCompra[]): Solicitacao {
+  const s: Solicitacao = { id: uid(), data: nowISO(), linhas };
+  update((db) => ({ ...db, solicitacoes: [...db.solicitacoes, s] }));
+  return s;
+}
 
 const KEY = "estoque-db-v1";
-const empty: DB = { itens: [], funcionarios: [], setores: [], fornecedores: [], entradas: [], saidas: [] };
+const empty: DB = { itens: [], funcionarios: [], setores: [], fornecedores: [], entradas: [], saidas: [], unidades: [], solicitacoes: [] };
 
 export interface NotaMeta { nota: string; fornecedorId: string; recebidoEm: string }
 export function registrarEntradas(linhas: { itemId: string; quantidade: number; descricaoPersonalizada?: string | undefined }[], meta: NotaMeta) {

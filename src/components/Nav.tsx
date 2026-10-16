@@ -9,6 +9,7 @@ export function Nav() {
         <nav className="flex gap-1">
           <Link to="/saida" className={cls} activeProps={{ className: "nav-link nav-active" }}>Saída</Link>
           <Link to="/entrada" className={cls} activeProps={{ className: "nav-link nav-active" }}>Entrada</Link>
+          <Link to="/compra" className="nav-link nav-buy" activeProps={{ className: "nav-link nav-buy nav-active" }}>🛒 Solicitar Compra</Link>
           <Link to="/" className={cls} activeOptions={{ exact: true }} activeProps={{ className: "nav-link nav-active" }}>Banco de Dados</Link>
         </nav>
       </div>
