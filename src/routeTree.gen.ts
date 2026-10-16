@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CompraRouteImport } from './routes/compra'
 import { Route as EntradaRouteImport } from './routes/entrada'
 import { Route as SaidaRouteImport } from './routes/saida'
 import { Route as SaidaVariosRouteImport } from './routes/saida-varios'
@@ -17,6 +18,11 @@ import { Route as SaidaVariosRouteImport } from './routes/saida-varios'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompraRoute = CompraRouteImport.update({
+  id: '/compra',
+  path: '/compra',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EntradaRoute = EntradaRouteImport.update({
@@ -37,12 +43,14 @@ const SaidaVariosRoute = SaidaVariosRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/compra': typeof CompraRoute
   '/entrada': typeof EntradaRoute
   '/saida': typeof SaidaRoute
   '/saida-varios': typeof SaidaVariosRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/compra': typeof CompraRoute
   '/entrada': typeof EntradaRoute
   '/saida': typeof SaidaRoute
   '/saida-varios': typeof SaidaVariosRoute
@@ -50,20 +58,22 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/compra': typeof CompraRoute
   '/entrada': typeof EntradaRoute
   '/saida': typeof SaidaRoute
   '/saida-varios': typeof SaidaVariosRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/entrada' | '/saida' | '/saida-varios'
+  fullPaths: '/' | '/compra' | '/entrada' | '/saida' | '/saida-varios'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/entrada' | '/saida' | '/saida-varios'
-  id: '__root__' | '/' | '/entrada' | '/saida' | '/saida-varios'
+  to: '/' | '/compra' | '/entrada' | '/saida' | '/saida-varios'
+  id: '__root__' | '/' | '/compra' | '/entrada' | '/saida' | '/saida-varios'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CompraRoute: typeof CompraRoute
   EntradaRoute: typeof EntradaRoute
   SaidaRoute: typeof SaidaRoute
   SaidaVariosRoute: typeof SaidaVariosRoute
@@ -76,6 +86,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/compra': {
+      id: '/compra'
+      path: '/compra'
+      fullPath: '/compra'
+      preLoaderRoute: typeof CompraRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/entrada': {
@@ -104,6 +121,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CompraRoute: CompraRoute,
   EntradaRoute: EntradaRoute,
   SaidaRoute: SaidaRoute,
   SaidaVariosRoute: SaidaVariosRoute,
