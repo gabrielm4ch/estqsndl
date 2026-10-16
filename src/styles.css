@@ -147,11 +147,13 @@
   --destructive-foreground: oklch(0.99 0 0);
   --success: oklch(0.55 0.15 150);
   --success-foreground: oklch(0.99 0 0);
+  --warning: oklch(0.85 0.17 90);
 }
 
 @theme inline {
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
   --font-sans: "IBM Plex Sans", system-ui, sans-serif;
   --font-display: "Space Grotesk", sans-serif;
 }
@@ -194,4 +196,10 @@
   .badge-ret { background: color-mix(in oklab, var(--accent) 35%, transparent); }
   .link { font-weight: 600; color: var(--primary); text-decoration: underline; text-underline-offset: 3px; font-size: 0.85rem; }
   .link-danger { color: var(--destructive); }
+  .nav-buy { background: var(--success); color: var(--success-foreground); opacity: 1; }
+  .nav-buy.nav-active { outline: 2px solid var(--accent); background: var(--success); color: var(--success-foreground); }
+  .urg { display: inline-block; width: 1.1rem; height: 1.1rem; border-radius: 0.2rem; border: 1px solid var(--border); }
+  .urg-1 { background: var(--success); } .urg-2 { background: var(--warning); } .urg-3 { background: var(--destructive); }
+  .modal-bg { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: color-mix(in oklab, var(--foreground) 45%, transparent); padding: 1rem; }
+  .modal { background: var(--card); border-radius: 0.75rem; padding: 1.5rem; width: 100%; max-width: 28rem; }
 }
