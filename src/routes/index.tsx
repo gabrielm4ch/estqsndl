@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Fragment, useState } from "react";
-import { abaixoMinimo, fmt, fmtDia, notasFiscais, porCodigo, proximoCodigo, unidadesDe, update, uid, useDB, type Categoria, type DB, type TipoPessoa } from "@/lib/store";
+import { fmt, fmtDia, notasFiscais, porCodigo, proximoCodigo, unidadesDe, update, uid, useDB, type Categoria, type DB, type TipoPessoa } from "@/lib/store";
 import { Pencil } from "lucide-react";
 import { exportarPDF } from "@/lib/pdf";
 
@@ -21,7 +21,6 @@ export const Route = createFileRoute("/")({
 function BancoDados() {
   const db = useDB();
   const [aba, setAba] = useState<Aba>("itens");
-  const comprar = abaixoMinimo(db);
 
   const pdfEstoque = () =>
     exportarPDF("Relatório de Estoque", "Estoque atual completo", ["Código", "Descrição", "Categoria", "Mínimo", "Atual", "Status"],
@@ -29,20 +28,6 @@ function BancoDados() {
 
   return (
     <div className="space-y-6">
-      <section className="alert-panel">
-        <h2 className="text-xl font-bold">⚠️ Para Comprar Hoje</h2>
-        {comprar.length === 0 ? <p className="mt-2 opacity-90">Nenhum item abaixo do estoque mínimo.</p> : (
-          <ul className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-            {comprar.map((i) => (
-              <li key={i.id} className="alert-item">
-                <b>{i.codigo}</b> — {i.descricao}<br />
-                <span className="text-sm">Atual {i.quantidade} / Mín. {i.minimo} · comprar {i.minimo - i.quantidade}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="tabs">
           {(Object.keys(ABAS) as Aba[]).map((t) => (

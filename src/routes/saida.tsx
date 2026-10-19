@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { darBaixaDevolucao, fmt, registrarSaidas, useDB } from "@/lib/store";
+import { darBaixaDevolucoes, diaAtual, fmt, registrarSaidas, useDB } from "@/lib/store";
 import { Historico } from "@/components/Historico";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/saida")({
   head: () => ({
@@ -10,6 +11,8 @@ export const Route = createFileRoute("/saida")({
       { name: "description", content: "Registre saídas de itens, devoluções e consulte o histórico." },
       { property: "og:title", content: "Saída · Controle de Estoque" },
       { property: "og:description", content: "Registre saídas de itens, devoluções e consulte o histórico." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: SaidaPage,
@@ -19,6 +22,14 @@ function SaidaPage() {
   const db = useDB();
   const [f, setF] = useState({ itemId: "", qtd: "", func: "", setor: "" });
   const [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null);
+  const [selecionadas, setSelecionadas] = useState<string[]>([]);
+  const [datas, setDatas] = useState<Record<string, string>>({});
+  const devolver = (ids: string[]) => {
+    const erro = darBaixaDevolucoes(ids.map((saidaId) => ({ saidaId, dataDevolucao: datas[saidaId] ?? diaAtual() })));
+    if (erro) return setMsg({ ok: false, t: erro });
+    setSelecionadas(selecionadas.filter((id) => !ids.includes(id)));
+    setMsg({ ok: true, t: "Devoluções registradas." });
+  };
   const item = (id: string) => db.itens.find((i) => i.id === id);
   const func = (id: string) => db.funcionarios.find((i) => i.id === id)?.nome ?? "-";
   const setor = (id: string) => db.setores.find((i) => i.id === id)?.nome ?? "-";
@@ -59,22 +70,25 @@ function SaidaPage() {
               {db.setores.map((p) => <option key={p.id} value={p.id}>{p.codigo} — {p.nome}</option>)}
             </select>
           </label>
-          <div className="lg:col-span-5"><button className="btn btn-primary">Registrar Saída</button></div>
+          <div className="lg:col-span-5"><Button className="btn btn-primary">Registrar Saída</Button></div>
         </form>
         {msg && <p className={`mt-2 text-sm font-medium ${msg.ok ? "text-success" : "text-destructive"}`}>{msg.t}</p>}
       </section>
 
       <section className="panel">
-        <h2 className="panel-title">Pendentes de Retorno</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="panel-title">Pendentes de Retorno</h2>
+          <Button className="btn btn-success" disabled={!selecionadas.length} onClick={() => devolver(selecionadas)}>Concluir Devoluções Selecionadas</Button>
+        </div>
         <div className="mt-3 overflow-x-auto">
           <table className="tbl">
-            <thead><tr><th>Saída</th><th>Item</th><th>Qtd.</th><th>Quem retirou</th><th>Setor</th><th></th></tr></thead>
+            <thead><tr><th><input type="checkbox" aria-label="Selecionar todos os retornos" checked={pendentes.length > 0 && pendentes.every((s) => selecionadas.includes(s.id))} disabled={!pendentes.length} onChange={(e) => setSelecionadas(e.target.checked ? pendentes.map((s) => s.id) : [])} /></th><th>Saída</th><th>Item</th><th>Qtd.</th><th>Quem retirou</th><th>Setor</th><th>Data de Devolução</th><th></th></tr></thead>
             <tbody>
-              {pendentes.length === 0 && <tr><td colSpan={6} className="text-muted-foreground">Nenhum item pendente.</td></tr>}
+              {pendentes.length === 0 && <tr><td colSpan={8} className="text-muted-foreground">Nenhum item pendente.</td></tr>}
               {pendentes.map((s) => (
                 <tr key={s.id}>
-                  <td>{fmt(s.data)}</td><td>{item(s.itemId)?.descricao ?? "(removido)"}</td><td>{s.quantidade}</td><td>{func(s.funcionarioId)}</td><td>{setor(s.setorId)}</td>
-                  <td className="text-right"><button className="btn btn-success" onClick={() => darBaixaDevolucao(s.id)}>Dar Baixa de Devolução</button></td>
+                  <td><input type="checkbox" aria-label={`Selecionar retorno ${item(s.itemId)?.descricao}`} checked={selecionadas.includes(s.id)} onChange={(e) => setSelecionadas(e.target.checked ? [...selecionadas, s.id] : selecionadas.filter((id) => id !== s.id))} /></td><td>{fmt(s.data)}</td><td>{item(s.itemId)?.descricao ?? "(removido)"}</td><td>{s.quantidade}</td><td>{func(s.funcionarioId)}</td><td>{setor(s.setorId)}</td>
+                  <td><input type="date" className="input" aria-label={`Data de Devolução ${item(s.itemId)?.descricao}`} value={datas[s.id] ?? diaAtual()} onChange={(e) => setDatas({ ...datas, [s.id]: e.target.value })} /></td><td className="text-right"><Button className="btn btn-success" onClick={() => devolver([s.id])}>Dar Baixa de Devolução</Button></td>
                 </tr>
               ))}
             </tbody>
