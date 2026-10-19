@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Fragment, useMemo, useState } from "react";
-import { fmt, registrarSolicitacao, unidadesDe, useDB, type DB, type Direcionamento, type LinhaCompra, type Solicitacao } from "@/lib/store";
+import { Fragment, useEffect, useMemo, useState } from "react";
+import { abaixoMinimo, copiarSolicitacao, editarSolicitacao, excluirSolicitacao, fmt, podeAlterarSolicitacao, registrarSolicitacao, unidadesDe, useDB, type DB, type Direcionamento, type LinhaCompra, type Solicitacao } from "@/lib/store";
 import { exportarPDF } from "@/lib/pdf";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/compra")({
   head: () => ({
@@ -22,7 +23,7 @@ const toInput = (d: Date) => new Date(d.getTime() - d.getTimezoneOffset() * 6000
 
 function pdfSolicitacao(db: DB, s: Solicitacao) {
   const nome = (id?: string) => (id ? db.funcionarios.find((f) => f.id === id)?.nome ?? "-" : "-");
-  exportarPDF("Solicitação de Compra", `Registrada em ${fmt(s.data)}`,
+  exportarPDF("Solicitação de Compra", `Solicitação #${s.codigo} · ${new Date(s.data).toLocaleDateString("pt-BR")}`,
     ["Qnt.", "Un.", "Descrição", "Direcionamento", "Setor", "Solicitado por", "Urg."],
     s.linhas.map((l) => [l.quantidade, l.unidade, l.descricao, l.direcionamento, l.setor || "-", nome(l.solicitanteId), l.urgencia]));
 }
@@ -30,25 +31,35 @@ function pdfSolicitacao(db: DB, s: Solicitacao) {
 function CompraPage() {
   const db = useDB();
   const [nova, setNova] = useState(false);
+  const [editando, setEditando] = useState<Solicitacao | null>(null);
+  const comprar = abaixoMinimo(db);
   const [gerada, setGerada] = useState<Solicitacao | null>(null);
   return (
     <div className="space-y-6">
-      <Historico db={db} />
+      <section className="alert-panel">
+        <h2 className="text-xl font-bold">⚠️ Para Comprar Hoje</h2>
+        {comprar.length === 0 ? <p className="mt-2 opacity-90">Nenhum item abaixo do estoque mínimo.</p> : (
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {comprar.map((i) => <li key={i.id} className="alert-item"><b>{i.codigo}</b> — {i.descricao}<br /><span className="text-sm">Atual {i.quantidade} / Mín. {i.minimo} · comprar {i.minimo - i.quantidade}</span></li>)}
+          </ul>
+        )}
+      </section>
       <section className="panel">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="panel-title">Nova Solicitação de Compra</h2>
-          {!nova && <button className="btn btn-success h-10 text-sm" onClick={() => setNova(true)}>Nova Solicitação de Compra</button>}
+          <h2 className="panel-title">{editando ? `Editar Solicitação #${editando.codigo}` : "Nova Solicitação de Compra"}</h2>
+          {!nova && <Button className="btn btn-success h-10 text-sm" onClick={() => setNova(true)}>Nova Solicitação de Compra</Button>}
         </div>
-        {nova && <Formulario db={db} onCancel={() => setNova(false)} onDone={(s) => { setNova(false); setGerada(s); }} />}
+        {nova && <Formulario key={editando?.id ?? "nova"} db={db} inicial={editando} onCancel={() => { setNova(false); setEditando(null); }} onDone={(s) => { setNova(false); setEditando(null); setGerada(s); }} />}
       </section>
+      <Historico db={db} onEditar={(s) => { setEditando(s); setNova(true); window.scrollTo({ top: 0, behavior: "smooth" }); }} onCopiar={(s) => { setEditando(s); setNova(true); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
       {gerada && (
         <div className="modal-bg" role="dialog" aria-modal="true">
           <div className="modal">
-            <h3 className="text-lg font-bold">✅ Solicitação gerada com sucesso</h3>
-            <p className="mt-2 text-sm text-muted-foreground">{gerada.linhas.length} item(ns) · {fmt(gerada.data)}</p>
+            <h3 className="text-lg font-bold">✅ Solicitação salva com sucesso</h3>
+            <p className="mt-2 text-sm text-muted-foreground">Solicitação #{gerada.codigo} · {gerada.linhas.length} item(ns)</p>
             <div className="mt-5 flex justify-end gap-2">
-              <button className="btn btn-ghost" onClick={() => pdfSolicitacao(db, gerada)}>Exportar em PDF</button>
-              <button className="btn btn-primary" onClick={() => setGerada(null)}>OK</button>
+              <Button className="btn btn-ghost" onClick={() => pdfSolicitacao(db, gerada)}>Exportar em PDF</Button>
+              <Button className="btn btn-primary" onClick={() => setGerada(null)}>OK</Button>
             </div>
           </div>
         </div>
@@ -59,10 +70,10 @@ function CompraPage() {
 
 type Linha = { qtd: string; unidade: string; descricao: string; direcionamento: Direcionamento; setor: string; temSolic: boolean; solicitanteId: string; urg: string };
 
-function Formulario({ db, onCancel, onDone }: { db: DB; onCancel: () => void; onDone: (s: Solicitacao) => void }) {
+function Formulario({ db, inicial, onCancel, onDone }: { db: DB; inicial: Solicitacao | null; onCancel: () => void; onDone: (s: Solicitacao) => void }) {
   const unidades = unidadesDe(db);
   const vazia = (): Linha => ({ qtd: "", unidade: unidades[0] ?? "UNIDADE", descricao: "", direcionamento: "MATERIAL DE EXPEDIENTE", setor: "", temSolic: false, solicitanteId: "", urg: "" });
-  const [linhas, setLinhas] = useState<Linha[]>([vazia()]);
+  const [linhas, setLinhas] = useState<Linha[]>(inicial ? inicial.linhas.map((l) => ({ qtd: String(l.quantidade), unidade: l.unidade, descricao: l.descricao, direcionamento: l.direcionamento, setor: l.setor, temSolic: Boolean(l.solicitanteId), solicitanteId: l.solicitanteId ?? "", urg: String(l.urgencia) })) : [vazia()]);
   const [erro, setErro] = useState("");
   const set = (i: number, p: Partial<Linha>) => setLinhas(linhas.map((l, j) => (j === i ? { ...l, ...p } : l)));
   const rotulo = (i: DB["itens"][number]) => `${i.codigo} — ${i.descricao}`;
@@ -86,7 +97,11 @@ function Formulario({ db, onCancel, onDone }: { db: DB; onCancel: () => void; on
       solicitanteId: l.temSolic && l.solicitanteId ? l.solicitanteId : undefined,
       urgencia: Number(l.urg) as 1 | 2 | 3,
     }));
-    onDone(registrarSolicitacao(out));
+    if (inicial) {
+      const erroEdicao = editarSolicitacao(inicial.id, out);
+      if (erroEdicao) return setErro(erroEdicao);
+      onDone({ ...inicial, linhas: out });
+    } else onDone(registrarSolicitacao(out));
   };
 
   return (
@@ -116,27 +131,36 @@ function Formulario({ db, onCancel, onDone }: { db: DB; onCancel: () => void; on
                 </td>
                 <td><input className="input w-14" inputMode="numeric" maxLength={1} value={l.urg} onChange={(e) => set(i, { urg: e.target.value.replace(/[^123]/g, "") })} /></td>
                 <td>{["1", "2", "3"].includes(l.urg) ? <span className={`urg urg-${l.urg}`} title={`Urgência ${l.urg}`} /> : <span className="urg" />}</td>
-                <td>{linhas.length > 1 && <button className="link link-danger" onClick={() => setLinhas(linhas.filter((_, j) => j !== i))}>Remover</button>}</td>
+                <td>{linhas.length > 1 && <Button className="link link-danger" onClick={() => setLinhas(linhas.filter((_, j) => j !== i))}>Remover</Button>}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
-        <button className="btn btn-ghost" onClick={() => setLinhas([...linhas, vazia()])}>+ Adicionar linha</button>
-        <button className="btn btn-primary" onClick={registrar}>Registrar Solicitação de Compra</button>
-        <button className="btn btn-ghost" onClick={onCancel}>Cancelar</button>
+        <Button className="btn btn-ghost" onClick={() => setLinhas([...linhas, vazia()])}>+ Adicionar linha</Button>
+        <Button className="btn btn-primary" onClick={registrar}>{inicial ? "Salvar alterações" : "Registrar Solicitação de Compra"}</Button>
+        <Button className="btn btn-ghost" onClick={onCancel}>Cancelar</Button>
       </div>
       {erro && <p className="mt-2 text-sm font-medium text-destructive">{erro}</p>}
     </div>
   );
 }
 
-function Historico({ db }: { db: DB }) {
+function Historico({ db, onEditar, onCopiar }: { db: DB; onEditar: (s: Solicitacao) => void; onCopiar: (s: Solicitacao) => void }) {
   const [aberto, setAberto] = useState(false);
   const [de, setDe] = useState("");
   const [ate, setAte] = useState("");
   const [ver, setVer] = useState<string | null>(null);
+  const [excluir, setExcluir] = useState<Solicitacao | null>(null);
+  const [erro, setErro] = useState("");
+  const [agora, setAgora] = useState(Date.now());
+  useEffect(() => {
+    const atualizar = () => setAgora(Date.now());
+    const timer = window.setInterval(atualizar, 1000);
+    window.addEventListener("focus", atualizar);
+    return () => { window.clearInterval(timer); window.removeEventListener("focus", atualizar); };
+  }, []);
   const nome = (id?: string) => (id ? db.funcionarios.find((f) => f.id === id)?.nome ?? "-" : "-");
   const lista = useMemo(() => {
     const s = [...db.solicitacoes].sort((a, b) => b.data.localeCompare(a.data));
@@ -149,52 +173,58 @@ function Historico({ db }: { db: DB }) {
     if (aberto) return setAberto(false);
     const h = new Date(); setAte(toInput(h)); setDe(toInput(new Date(h.getTime() - 30 * 864e5))); setAberto(true);
   };
-  const maxUrg = (s: Solicitacao) => Math.max(...s.linhas.map((l) => l.urgencia));
-
   return (
     <section className="panel">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="panel-title">Histórico de Solicitações</h2>
-        <button className="btn btn-ghost" onClick={abrir}>{aberto ? "Mostrar só últimas 5" : "Histórico de Compras"}</button>
+        <Button variant="outline" className="btn btn-ghost" onClick={abrir}>{aberto ? "Mostrar só últimas 5" : "Histórico de Compras"}</Button>
       </div>
-      {aberto && (
-        <div className="mt-4 flex flex-wrap gap-4">
-          <label className="field">De:<input type="date" className="input" value={de} onChange={(e) => setDe(e.target.value)} /></label>
-          <label className="field">Até:<input type="date" className="input" value={ate} onChange={(e) => setAte(e.target.value)} /></label>
-        </div>
-      )}
+      {aberto && <div className="mt-4 flex flex-wrap gap-4">
+        <label className="field">De:<input type="date" className="input" value={de} onChange={(e) => setDe(e.target.value)} /></label>
+        <label className="field">Até:<input type="date" className="input" value={ate} onChange={(e) => setAte(e.target.value)} /></label>
+      </div>}
       <p className="mt-3 text-sm text-muted-foreground">{aberto ? "Período filtrado" : "Últimas 5 solicitações"} · {lista.length} registro(s)</p>
+      {erro && <p role="alert" className="mt-2 text-sm text-destructive">{erro}</p>}
       <div className="mt-3 overflow-x-auto">
         <table className="tbl">
-          <thead><tr><th>Data/Hora</th><th>Itens</th><th>Maior urgência</th><th></th></tr></thead>
+          <thead><tr><th>Solicitação</th><th>Data</th><th>Itens</th><th>Ações</th></tr></thead>
           <tbody>
             {lista.length === 0 && <tr><td colSpan={4} className="text-muted-foreground">Nenhuma solicitação.</td></tr>}
             {lista.map((s) => (
               <Fragment key={s.id}>
                 <tr>
-                  <td>{fmt(s.data)}</td><td>{s.linhas.length}</td>
-                  <td><span className={`urg urg-${maxUrg(s)} align-middle`} /> {maxUrg(s)}</td>
-                  <td className="whitespace-nowrap text-right">
-                    <button className="link" onClick={() => setVer(ver === s.id ? null : s.id)}>{ver === s.id ? "Ocultar" : "Ver Mais"}</button>
-                    <button className="link ml-3" onClick={() => pdfSolicitacao(db, s)}>Exportar PDF</button>
-                  </td>
+                  <td className="whitespace-nowrap">Solicitação #{s.codigo}</td><td className="whitespace-nowrap">{new Date(s.data).toLocaleDateString("pt-BR")}</td><td className="whitespace-nowrap">{s.linhas.length} itens</td>
+                  <td><div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                    <Button variant="link" className="link h-auto p-0" onClick={() => setVer(ver === s.id ? null : s.id)}>{ver === s.id ? "Ocultar" : "Ver Mais"}</Button>
+                    <Button variant="link" className="link h-auto p-0" onClick={() => pdfSolicitacao(db, s)}>Exportar PDF</Button>
+                    {podeAlterarSolicitacao(s, agora) ? <>
+                      <Button variant="link" className="link h-auto p-0" onClick={() => onEditar(s)}>Editar</Button>
+                      <Button variant="link" className="link link-danger h-auto p-0" onClick={() => { setErro(""); setExcluir(s); }}>Excluir</Button>
+                    </> : <Button variant="link" className="link h-auto p-0" onClick={() => { const copia = copiarSolicitacao(s.id); if (copia) onCopiar(copia); }}>Criar Cópia</Button>}
+                  </div></td>
                 </tr>
-                {ver === s.id && (
-                  <tr><td colSpan={4}>
-                    <table className="tbl">
-                      <thead><tr><th>Qnt.</th><th>Un.</th><th>Descrição</th><th>Direcionamento</th><th>Setor</th><th>Solicitado por</th><th>Urg.</th></tr></thead>
-                      <tbody>{s.linhas.map((l, i) => (
-                        <tr key={i}><td>{l.quantidade}</td><td>{l.unidade}</td><td>{l.descricao}</td><td>{l.direcionamento}</td><td>{l.setor || "-"}</td><td>{nome(l.solicitanteId)}</td>
-                          <td><span className={`urg urg-${l.urgencia} align-middle`} /> {l.urgencia}</td></tr>
-                      ))}</tbody>
-                    </table>
-                  </td></tr>
-                )}
+                {ver === s.id && <tr><td colSpan={4}>
+                  <p className="mb-3 text-sm text-muted-foreground">Criada em {fmt(s.data)}</p>
+                  <table className="tbl">
+                    <thead><tr><th>Qnt.</th><th>Un.</th><th>Descrição</th><th>Direcionamento</th><th>Setor</th><th>Solicitado por</th><th>Urg.</th></tr></thead>
+                    <tbody>{s.linhas.map((l, i) => <tr key={i}><td>{l.quantidade}</td><td>{l.unidade}</td><td>{l.descricao}</td><td>{l.direcionamento}</td><td>{l.setor || "-"}</td><td>{nome(l.solicitanteId)}</td><td><span className={`urg urg-${l.urgencia} align-middle`} /> {l.urgencia}</td></tr>)}</tbody>
+                  </table>
+                </td></tr>}
               </Fragment>
             ))}
           </tbody>
         </table>
       </div>
+      {excluir && <div className="modal-bg" role="dialog" aria-modal="true" aria-labelledby="confirmar-exclusao">
+        <div className="modal">
+          <h3 id="confirmar-exclusao" className="text-lg font-bold">Tem certeza de que deseja excluir esta solicitação?</h3>
+          <p className="mt-2 text-sm text-muted-foreground">Solicitação #{excluir.codigo}</p>
+          <div className="mt-5 flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setExcluir(null)}>Cancelar</Button>
+            <Button variant="destructive" onClick={() => { const e = excluirSolicitacao(excluir.id); if (e) setErro(e); setExcluir(null); }}>Excluir</Button>
+          </div>
+        </div>
+      </div>}
     </section>
   );
 }
