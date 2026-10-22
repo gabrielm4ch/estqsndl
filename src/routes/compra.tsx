@@ -109,10 +109,12 @@ function Formulario({ db, inicial, onCancel, onDone }: { db: DB; inicial: Solici
       <datalist id="itens-compra">{db.itens.map((i) => <option key={i.id} value={rotulo(i)} />)}</datalist>
       <div className="overflow-x-auto">
         <table className="tbl">
-          <thead><tr><th>Qnt.</th><th>Un.</th><th>Descrição</th><th>Direcionamento</th><th>Setor</th><th>Solicitado por</th><th>Urg.</th><th></th><th></th></tr></thead>
+          <thead><tr><th>Urg.</th><th></th><th>Qnt.</th><th>Un.</th><th>Descrição</th><th>Direcionamento</th><th>Setor</th><th>Solicitado por</th><th></th></tr></thead>
           <tbody>
             {linhas.map((l, i) => (
               <tr key={i}>
+                <td><input className="input w-14" inputMode="numeric" maxLength={1} value={l.urg} onChange={(e) => set(i, { urg: e.target.value.replace(/[^123]/g, "") })} /></td>
+                <td>{["1", "2", "3"].includes(l.urg) ? <span className={`urg urg-${l.urg}`} title={`Urgência ${l.urg}`} /> : <span className="urg" />}</td>
                 <td><input type="number" min="1" className="input w-20" value={l.qtd} onChange={(e) => set(i, { qtd: e.target.value })} /></td>
                 <td><select className="input" value={l.unidade} onChange={(e) => set(i, { unidade: e.target.value })}>{unidades.map((u) => <option key={u}>{u}</option>)}</select></td>
                 <td><input className="input min-w-56" list="itens-compra" placeholder="Buscar item ou digitar novo…" value={l.descricao} onChange={(e) => escolherDescricao(i, e.target.value)} /></td>
@@ -129,8 +131,6 @@ function Formulario({ db, inicial, onCancel, onDone }: { db: DB; inicial: Solici
                     )}
                   </div>
                 </td>
-                <td><input className="input w-14" inputMode="numeric" maxLength={1} value={l.urg} onChange={(e) => set(i, { urg: e.target.value.replace(/[^123]/g, "") })} /></td>
-                <td>{["1", "2", "3"].includes(l.urg) ? <span className={`urg urg-${l.urg}`} title={`Urgência ${l.urg}`} /> : <span className="urg" />}</td>
                 <td>{linhas.length > 1 && <Button className="link link-danger" onClick={() => setLinhas(linhas.filter((_, j) => j !== i))}>Remover</Button>}</td>
               </tr>
             ))}

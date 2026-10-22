@@ -99,8 +99,8 @@ function SaidaPage() {
       <Historico
         titulo="Histórico de Saídas"
         botao="Histórico de Saídas"
-        head={["Data/Hora", "Código", "Item", "Qtd.", "Quem retirou", "Setor", "Devolução"]}
-        rows={db.saidas.map((s) => ({ data: s.data, cells: [fmt(s.data), item(s.itemId)?.codigo ?? "-", item(s.itemId)?.descricao ?? "(removido)", s.quantidade, func(s.funcionarioId), setor(s.setorId), s.retorno ? (s.devolvidoEm ? fmt(s.devolvidoEm) : "Pendente") : "—"] }))}
+        head={["Data de Saída", "Código", "Item", "Qtd.", "Quem retirou", "Setor", "Devolução"]}
+        rows={db.saidas.map((s) => ({ data: s.data, cells: [new Date(s.data).toLocaleDateString("pt-BR"), item(s.itemId)?.codigo ?? "-", item(s.itemId)?.descricao ?? "(removido)", s.quantidade, func(s.funcionarioId), setor(s.setorId), s.retorno ? (s.devolvidoEm ? fmt(s.devolvidoEm) : "Pendente") : "—"] }))}
       />
     </div>
   );

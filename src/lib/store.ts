@@ -220,3 +220,9 @@ export function darBaixaDevolucoes(linhas: { saidaId: string; dataDevolucao: str
 export function darBaixaDevolucao(saidaId: string, dataDevolucao = diaAtual()): string | null {
   return darBaixaDevolucoes([{ saidaId, dataDevolucao }]);
 }
+
+/** Apaga registros de histórico (não altera o saldo do estoque). */
+export function apagarRegistros(colecao: "entradas" | "saidas" | "solicitacoes", ids: string[]) {
+  const set = new Set(ids);
+  update((db) => ({ ...db, [colecao]: (db[colecao] as { id: string }[]).filter((r) => !set.has(r.id)) }));
+}
