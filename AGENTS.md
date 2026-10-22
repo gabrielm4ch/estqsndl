@@ -12,3 +12,4 @@
 - Keep stock movement validation and purchase lifecycle rules in `src/lib/store.ts` so individual and batch screens share identical safeguards.
 - Persist monthly purchase sequence high-water marks alongside browser data and migrate legacy requests on load so deletion never reuses a code.
 - Record return dates per outgoing movement and process selected returns atomically and idempotently so repeat actions cannot inflate stock.
+- Lovable Cloud is connected because the user asked for it, but application data still lives in the browser store; only move a table to the database when the user explicitly asks, since migrating changes how data is shared and backed up.
