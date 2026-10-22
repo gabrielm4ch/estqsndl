@@ -209,6 +209,11 @@
   .badge-ret { background: color-mix(in oklab, var(--accent) 35%, transparent); }
   .link { font-weight: 600; color: var(--primary); text-decoration: underline; text-underline-offset: 3px; font-size: 0.85rem; }
   .link-danger { color: var(--destructive); }
+  .st { display: inline-block; width: 0.9rem; height: 0.9rem; border-radius: 99px; border: 1px solid var(--border); vertical-align: middle; }
+  .st-black { background: var(--foreground); }
+  .st-red { background: var(--destructive); }
+  .st-yellow { background: var(--warning); }
+  .st-green { background: var(--success); }
   .nav-buy { background: var(--nav-buy); color: var(--foreground); }
   .nav-buy.nav-active { outline: 2px solid var(--primary-foreground); outline-offset: 2px; background: var(--nav-buy); color: var(--foreground); }
   .urg { display: inline-block; width: 1.1rem; height: 1.1rem; border-radius: 0.2rem; border: 1px solid var(--border); }
