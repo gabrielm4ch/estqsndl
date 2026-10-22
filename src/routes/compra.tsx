@@ -1,3 +1,4 @@
+import { ApagarHistorico } from "@/components/ApagarHistorico";
 import { createFileRoute } from "@tanstack/react-router";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { abaixoMinimo, copiarSolicitacao, editarSolicitacao, excluirSolicitacao, fmt, podeAlterarSolicitacao, registrarSolicitacao, unidadesDe, useDB, type DB, type Direcionamento, type LinhaCompra, type Solicitacao } from "@/lib/store";
@@ -52,6 +53,7 @@ function CompraPage() {
         {nova && <Formulario key={editando?.id ?? "nova"} db={db} inicial={editando} onCancel={() => { setNova(false); setEditando(null); }} onDone={(s) => { setNova(false); setEditando(null); setGerada(s); }} />}
       </section>
       <Historico db={db} onEditar={(s) => { setEditando(s); setNova(true); window.scrollTo({ top: 0, behavior: "smooth" }); }} onCopiar={(s) => { setEditando(s); setNova(true); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
+      <ApagarHistorico colecao="solicitacoes" registros={db.solicitacoes.map((s) => ({ id: s.id, data: s.data, label: `Solicitação #${s.codigo} · ${new Date(s.data).toLocaleDateString("pt-BR")} · ${s.linhas.length} itens` }))} />
       {gerada && (
         <div className="modal-bg" role="dialog" aria-modal="true">
           <div className="modal">

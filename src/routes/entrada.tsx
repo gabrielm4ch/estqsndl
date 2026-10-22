@@ -1,3 +1,4 @@
+import { ApagarHistorico } from "@/components/ApagarHistorico";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { fmtDia, registrarEntradas, useDB, type DB } from "@/lib/store";
@@ -85,6 +86,7 @@ function EntradaPage() {
         rows={db.entradas.map((e) => { const rec = e.recebidoEm || e.data.slice(0, 10); return { data: rec, cells: [fmtDia(rec), e.nota ?? "-", e.fornecedor, item(e.itemId)?.codigo ?? "-", item(e.itemId)?.descricao ?? "(removido)", e.descricaoPersonalizada ?? "-", e.quantidade] }; })}
 
       />
+      <ApagarHistorico colecao="entradas" registros={db.entradas.map((e) => { const rec = e.recebidoEm || e.data.slice(0, 10); return { id: e.id, data: rec, label: `${fmtDia(rec)} · NF ${e.nota ?? "-"} · ${e.quantidade} × ${item(e.itemId)?.descricao ?? "(removido)"}` }; })} />
     </div>
   );
 }
