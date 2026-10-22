@@ -174,7 +174,10 @@
 
 @layer components {
   .topbar { background: var(--primary); color: var(--primary-foreground); border-bottom: 4px solid var(--accent); }
-  .brand { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; }
+  .brand { font-family: var(--font-display); font-weight: 400; font-size: 1.15rem; }
+  .nav-data { display: inline-flex; align-items: center; }
+  .nav-expand { display: inline-block; max-width: 0; overflow: hidden; white-space: nowrap; vertical-align: bottom; transition: max-width .25s ease, margin .25s ease; }
+  .nav-data:hover .nav-expand, .nav-data:focus-visible .nav-expand { max-width: 12rem; margin-left: .4rem; }
   .nav-link { padding: 0.45rem 0.9rem; border-radius: 0.4rem; font-weight: 600; background: var(--nav-idle); color: var(--foreground); transition: filter .15s; }
   .nav-link:hover { filter: brightness(.95); }
   .nav-out.nav-active { background: var(--nav-out); color: var(--destructive-foreground); }
