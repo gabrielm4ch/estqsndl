@@ -73,3 +73,14 @@ describe("Saldo e devoluções", () => {
     darBaixaDevolucoes(devolucoes); expect(ler().itens[0]?.quantidade).toBe(4);
   });
 });
+
+describe("Status do estoque (tela Estoque Atual)", () => {
+  const item = (quantidade: number, minimo: number) => ({ id: "x", codigo: "1", descricao: "Item", minimo, quantidade, categoria: "Consumível" as const });
+  it("preto quando a quantidade é 0", () => expect(statusDe(item(0, 10))).toBe("zerado"));
+  it("vermelho quando está acima de 0 mas abaixo do mínimo", () => expect(statusDe(item(9, 10))).toBe("critico"));
+  it("amarelo entre o mínimo e mínimo + 20%", () => {
+    expect(statusDe(item(10, 10))).toBe("atencao");
+    expect(statusDe(item(12, 10))).toBe("atencao");
+  });
+  it("verde acima do mínimo + 20%", () => expect(statusDe(item(13, 10))).toBe("ok"));
+});
