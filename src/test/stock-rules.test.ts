@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { adicionarSolicitacao, copiarSolicitacao, darBaixaDevolucoes, editarSolicitacao, excluirSolicitacao, normalizarSolicitacoes, podeAlterarSolicitacao, registrarSaidas, update, type DB, type LinhaCompra } from "@/lib/store";
+import { adicionarSolicitacao, copiarSolicitacao, darBaixaDevolucoes, editarSolicitacao, excluirSolicitacao, normalizarSolicitacoes, podeAlterarSolicitacao, registrarSaidas, statusDe, update, type DB, type LinhaCompra } from "@/lib/store";
 
 const linha: LinhaCompra = { quantidade: 4, unidade: "UNIDADE", descricao: "Papel", direcionamento: "MATERIAL DE EXPEDIENTE", setor: "Secretaria", urgencia: 2 };
 const vazio = (): DB => ({ itens: [], funcionarios: [], setores: [], fornecedores: [], entradas: [], saidas: [], unidades: [], solicitacoes: [] });

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { porCodigo, statusDe, useDB } from "@/lib/store";
+import { porCodigo, statusDe, useDB, type StatusEstoque } from "@/lib/store";
 
 export const Route = createFileRoute("/estoque")({
   head: () => ({
@@ -16,7 +16,7 @@ export const Route = createFileRoute("/estoque")({
   component: EstoqueAtual,
 });
 
-const ROTULO: Record<Status, string> = {
+const ROTULO: Record<StatusEstoque, string> = {
   zerado: "Zerado",
   critico: "Comprar",
   atencao: "Atenção",
