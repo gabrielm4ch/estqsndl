@@ -157,6 +157,15 @@ export const uid = () => crypto.randomUUID();
 export const nowISO = () => new Date().toISOString();
 export const fmt = (iso: string) => new Date(iso).toLocaleString("pt-BR");
 
+export type StatusEstoque = "zerado" | "critico" | "atencao" | "ok";
+/** PRETO: zerado · VERMELHO: abaixo do mínimo · AMARELO: até mínimo+20% · VERDE: acima disso. */
+export function statusDe(i: Item): StatusEstoque {
+  if (i.quantidade === 0) return "zerado";
+  if (i.quantidade < i.minimo) return "critico";
+  if (i.quantidade <= i.minimo * 1.2) return "atencao";
+  return "ok";
+}
+
 export function abaixoMinimo(db: DB) {
   return db.itens.filter((i) => i.quantidade < i.minimo);
 }

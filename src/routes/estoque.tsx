@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { porCodigo, useDB, type Item } from "@/lib/store";
+import { porCodigo, statusDe, useDB } from "@/lib/store";
 
 export const Route = createFileRoute("/estoque")({
   head: () => ({
@@ -15,16 +15,6 @@ export const Route = createFileRoute("/estoque")({
   }),
   component: EstoqueAtual,
 });
-
-type Status = "zerado" | "critico" | "atencao" | "ok";
-
-export function statusDe(i: Item): Status {
-  if (i.quantidade === 0) return "zerado";
-  const limite = i.minimo * 1.2;
-  if (i.quantidade < i.minimo) return "critico";
-  if (i.quantidade <= limite) return "atencao";
-  return "ok";
-}
 
 const ROTULO: Record<Status, string> = {
   zerado: "Zerado",
