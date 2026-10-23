@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { CATALOGO_INICIAL } from "./catalogo-inicial";
 
 export type Categoria = "Consumível" | "Retorno";
 export interface Item { id: string; codigo: string; descricao: string; minimo: number; quantidade: number; categoria: Categoria; unidade?: string | undefined }
@@ -10,7 +11,26 @@ export interface Saida { id: string; itemId: string; quantidade: number; funcion
 export type Direcionamento = "MATERIAL DE EXPEDIENTE" | "MATERIAL EDUCACIONAL";
 export interface LinhaCompra { quantidade: number; unidade: string; descricao: string; itemId?: string | undefined; direcionamento: Direcionamento; setor: string; solicitanteId?: string | undefined; urgencia: 1 | 2 | 3 }
 export interface Solicitacao { id: string; codigo?: string; data: string; linhas: LinhaCompra[] }
-export interface DB { itens: Item[]; funcionarios: Pessoa[]; setores: Pessoa[]; fornecedores: Fornecedor[]; entradas: Entrada[]; saidas: Saida[]; unidades: string[]; solicitacoes: Solicitacao[]; solicitacaoSequencias?: Record<string, number> }
+export interface DB { itens: Item[]; funcionarios: Pessoa[]; setores: Pessoa[]; fornecedores: Fornecedor[]; entradas: Entrada[]; saidas: Saida[]; unidades: string[]; solicitacoes: Solicitacao[]; solicitacaoSequencias?: Record<string, number>; catalogoInicialAplicado?: boolean; comprasEncaminhadas?: Record<string, string> }
+
+export function cadastrarCatalogoInicial(db: DB): DB {
+  if (db.catalogoInicialAplicado) return db;
+  const chaves = new Set(db.itens.map((i) => `${i.codigo}|${i.descricao}`));
+  return { ...db, catalogoInicialAplicado: true, itens: [...db.itens, ...CATALOGO_INICIAL.filter((i) => !chaves.has(`${i.codigo}|${i.descricao}`)).map((i) => ({ ...i }))] };
+}
+const saldoCompra = (i: Item) => `${i.quantidade}|${i.minimo}`;
+export function paraComprarHoje(db: DB): Item[] {
+  return porCodigo(db.itens.filter((i) => (i.quantidade === 0 || i.quantidade < i.minimo) && db.comprasEncaminhadas?.[i.id] !== saldoCompra(i)));
+}
+export function linhasParaCompra(itens: Item[]): LinhaCompra[] {
+  return itens.map((i) => ({ itemId: i.id, quantidade: Math.max(1, Math.ceil(i.minimo - i.quantidade)), unidade: i.unidade ?? "UNIDADE", descricao: i.descricao, direcionamento: "MATERIAL DE EXPEDIENTE", setor: "", urgencia: 2 }));
+}
+export function encaminharItensCompra(db: DB, linhas: LinhaCompra[], ids: string[]): DB {
+  const confirmados = new Set(linhas.map((l) => l.itemId));
+  const comprasEncaminhadas = { ...db.comprasEncaminhadas };
+  for (const i of db.itens) if (ids.includes(i.id) && confirmados.has(i.id)) comprasEncaminhadas[i.id] = saldoCompra(i);
+  return { ...db, comprasEncaminhadas };
+}
 
 export const UNIDADES_PADRAO = ["UNIDADE", "ROLO", "FOLHA", "PACOTE", "CARTELA"];
 export const unidadesDe = (db: DB) => [...UNIDADES_PADRAO, ...db.unidades.filter((u) => !UNIDADES_PADRAO.includes(u))];
@@ -52,11 +72,11 @@ export function adicionarSolicitacao(db: DB, linhas: LinhaCompra[], data: string
   const solicitacao = { id, data, codigo: mes + String(numero).padStart(2, "0"), linhas: linhas.map((l) => ({ ...l })) };
   return { solicitacao, db: { ...normalizado, solicitacaoSequencias: { ...normalizado.solicitacaoSequencias, [mes]: numero }, solicitacoes: [...normalizado.solicitacoes, solicitacao] } };
 }
-export function registrarSolicitacao(linhas: LinhaCompra[]): Solicitacao {
+export function registrarSolicitacao(linhas: LinhaCompra[], idsEncaminhados: string[] = []): Solicitacao {
   const data = nowISO();
   const id = uid();
   let resultado: Solicitacao = { id, data, linhas };
-  update((db) => { const novo = adicionarSolicitacao(db, linhas, data, id); resultado = novo.solicitacao; return novo.db; });
+  update((db) => { const novo = adicionarSolicitacao(db, linhas, data, id); resultado = novo.solicitacao; return encaminharItensCompra(novo.db, linhas, idsEncaminhados); });
   return resultado;
 }
 export function editarSolicitacao(id: string, linhas: LinhaCompra[]): string | null {
@@ -135,7 +155,7 @@ const listeners = new Set<() => void>();
 function load() {
   if (loaded || typeof window === "undefined") return;
   loaded = true;
-  try { const raw = localStorage.getItem(KEY); if (raw) { state = normalizarSolicitacoes({ ...empty, ...JSON.parse(raw) }); localStorage.setItem(KEY, JSON.stringify(state)); } } catch { /* ignore */ }
+  try { const raw = localStorage.getItem(KEY); state = cadastrarCatalogoInicial(normalizarSolicitacoes({ ...empty, ...(raw ? JSON.parse(raw) : {}) })); localStorage.setItem(KEY, JSON.stringify(state)); } catch { /* preserve data if storage is unavailable */ }
 }
 
 export function update(fn: (db: DB) => DB) {
