@@ -22,6 +22,12 @@ const ROTULO: Record<StatusEstoque, string> = {
   atencao: "Atenção",
   ok: "OK",
 };
+const COR: Record<StatusEstoque, string> = {
+  zerado: "st-black",
+  critico: "st-red",
+  atencao: "st-yellow",
+  ok: "st-green",
+};
 
 function EstoqueAtual() {
   const db = useDB();
@@ -73,7 +79,7 @@ function EstoqueAtual() {
               const st = statusDe(i);
               return (
                 <tr key={i.id}>
-                  <td><span className={`st st-${st}`} title={ROTULO[st]} /></td>
+                  <td><span className={`st ${COR[st]}`} title={ROTULO[st]} /></td>
                   <td>{i.codigo}</td>
                   <td>{i.descricao}</td>
                   <td>{i.unidade ?? "UNIDADE"}</td>
