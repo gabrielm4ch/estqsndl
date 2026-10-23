@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { adicionarSolicitacao, copiarSolicitacao, darBaixaDevolucoes, editarSolicitacao, excluirSolicitacao, normalizarSolicitacoes, podeAlterarSolicitacao, registrarSaidas, update, type DB, type LinhaCompra } from "@/lib/store";
+import { adicionarSolicitacao, copiarSolicitacao, darBaixaDevolucoes, editarSolicitacao, excluirSolicitacao, normalizarSolicitacoes, podeAlterarSolicitacao, registrarSaidas, statusDe, update, type DB, type LinhaCompra } from "@/lib/store";
 
 const linha: LinhaCompra = { quantidade: 4, unidade: "UNIDADE", descricao: "Papel", direcionamento: "MATERIAL DE EXPEDIENTE", setor: "Secretaria", urgencia: 2 };
 const vazio = (): DB => ({ itens: [], funcionarios: [], setores: [], fornecedores: [], entradas: [], saidas: [], unidades: [], solicitacoes: [] });
@@ -72,4 +72,15 @@ describe("Saldo e devoluções", () => {
     expect(ler().saidas.map((s) => s.devolvidoEm)).toEqual(["2026-10-15T00:00:00", "2026-10-16T00:00:00"]);
     darBaixaDevolucoes(devolucoes); expect(ler().itens[0]?.quantidade).toBe(4);
   });
+});
+
+describe("Status do estoque (tela Estoque Atual)", () => {
+  const item = (quantidade: number, minimo: number) => ({ id: "x", codigo: "1", descricao: "Item", minimo, quantidade, categoria: "Consumível" as const });
+  it("preto quando a quantidade é 0", () => expect(statusDe(item(0, 10))).toBe("zerado"));
+  it("vermelho quando está acima de 0 mas abaixo do mínimo", () => expect(statusDe(item(9, 10))).toBe("critico"));
+  it("amarelo entre o mínimo e mínimo + 20%", () => {
+    expect(statusDe(item(10, 10))).toBe("atencao");
+    expect(statusDe(item(12, 10))).toBe("atencao");
+  });
+  it("verde acima do mínimo + 20%", () => expect(statusDe(item(13, 10))).toBe("ok"));
 });

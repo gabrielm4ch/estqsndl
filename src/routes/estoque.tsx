@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { porCodigo, useDB, type Item } from "@/lib/store";
+import { porCodigo, statusDe, useDB, type StatusEstoque } from "@/lib/store";
 
 export const Route = createFileRoute("/estoque")({
   head: () => ({
@@ -16,21 +16,17 @@ export const Route = createFileRoute("/estoque")({
   component: EstoqueAtual,
 });
 
-type Status = "zerado" | "critico" | "atencao" | "ok";
-
-export function statusDe(i: Item): Status {
-  if (i.quantidade === 0) return "zerado";
-  const limite = i.minimo * 1.2;
-  if (i.quantidade < i.minimo) return "critico";
-  if (i.quantidade <= limite) return "atencao";
-  return "ok";
-}
-
-const ROTULO: Record<Status, string> = {
+const ROTULO: Record<StatusEstoque, string> = {
   zerado: "Zerado",
   critico: "Comprar",
   atencao: "Atenção",
   ok: "OK",
+};
+const COR: Record<StatusEstoque, string> = {
+  zerado: "st-black",
+  critico: "st-red",
+  atencao: "st-yellow",
+  ok: "st-green",
 };
 
 function EstoqueAtual() {
@@ -83,7 +79,7 @@ function EstoqueAtual() {
               const st = statusDe(i);
               return (
                 <tr key={i.id}>
-                  <td><span className={`st st-${st}`} title={ROTULO[st]} /></td>
+                  <td><span className={`st ${COR[st]}`} title={ROTULO[st]} /></td>
                   <td>{i.codigo}</td>
                   <td>{i.descricao}</td>
                   <td>{i.unidade ?? "UNIDADE"}</td>
