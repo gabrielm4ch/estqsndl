@@ -144,6 +144,7 @@
   --nav-in: oklch(0.5 0.18 255);
   --nav-data: oklch(0.89 0 0);
   --nav-buy: oklch(0.76 0.17 58);
+  --nav-stock: oklch(0.8 0.055 65);
   --notice: oklch(0.72 0.16 58);
   --primary-foreground: oklch(0.98 0.005 85);
   --accent: oklch(0.78 0.15 75);
@@ -175,14 +176,16 @@
 @layer components {
   .topbar { background: var(--primary); color: var(--primary-foreground); border-bottom: 4px solid var(--accent); }
   .brand { font-family: var(--font-display); font-weight: 400; font-size: 1.15rem; }
-  .nav-data { display: inline-flex; align-items: center; }
+  .nav-data, .nav-expansible { display: inline-flex; align-items: center; }
   .nav-expand { display: inline-block; max-width: 0; overflow: hidden; white-space: nowrap; vertical-align: bottom; transition: max-width .25s ease, margin .25s ease; }
-  .nav-data:hover .nav-expand, .nav-data:focus-visible .nav-expand { max-width: 12rem; margin-left: .4rem; }
+  .nav-data:hover .nav-expand, .nav-data:focus-visible .nav-expand, .nav-expansible:hover .nav-expand, .nav-expansible:focus-visible .nav-expand { max-width: 12rem; margin-left: .4rem; }
   .nav-link { padding: 0.45rem 0.9rem; border-radius: 0.4rem; font-weight: 600; background: var(--nav-idle); color: var(--foreground); transition: filter .15s; }
   .nav-link:hover { filter: brightness(.95); }
   .nav-out.nav-active { background: var(--nav-out); color: var(--destructive-foreground); }
   .nav-in.nav-active { background: var(--nav-in); color: var(--primary-foreground); }
-  .nav-data.nav-active { background: var(--nav-data); color: var(--foreground); }
+  .nav-data, .nav-data.nav-active { background: var(--nav-data); color: var(--foreground); }
+  .nav-stock, .nav-stock.nav-active { background: var(--nav-stock); color: var(--foreground); }
+  .nav-stock:hover, .nav-buy:hover { filter: none; }
   .panel { background: var(--card); border: 1px solid var(--border); border-radius: 0.5rem; padding: 1.25rem; box-shadow: 0 1px 2px color-mix(in oklab, var(--foreground) 6%, transparent); }
   .panel-title { font-size: 1.15rem; font-weight: 700; }
   .alert-panel { background: var(--destructive); color: var(--destructive-foreground); border-radius: 0.5rem; padding: 1.25rem; box-shadow: 0 8px 24px -10px var(--destructive); }
@@ -221,4 +224,8 @@
   .urg-1 { background: var(--success); } .urg-2 { background: var(--warning); } .urg-3 { background: var(--destructive); }
   .modal-bg { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: color-mix(in oklab, var(--foreground) 45%, transparent); padding: 1rem; }
   .modal { background: var(--card); border-radius: 0.5rem; padding: 1.5rem; width: 100%; max-width: 28rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-expand { transition: none; }
 }
